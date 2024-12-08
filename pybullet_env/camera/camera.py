@@ -13,6 +13,18 @@ class Camera:
         self.width, self.height = size
         self.near, self.far = near, far
         self.fov = fov
+        
+        aspect = self.width / self.height
+        fov_rad = self.fov * (np.pi / 180.0)
+
+        self.fy = (self.height / 2.0) / np.tan(fov_rad / 2.0)
+        self.fx = self.fy * aspect
+        self.cx = self.width / 2.0
+        self.cy = self.height / 2.0
+        
+        self.translation = cam_pos
+        self.rotation = p.getQuaternionFromEuler([np.pi, 0, 0])
+
 
         aspect = self.width / self.height
         self.projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
@@ -33,6 +45,41 @@ class Camera:
                                                    self.view_matrix, self.projection_matrix,
                                                    )
         return rgb[:, :, 0:3], depth, seg
+    
+    
+    def pixel_to_world(self, u, v, Z):
+        """
+        Convert a pixel location (u, v) with a known depth Z in the camera's view
+        to world coordinates using PyBullet transforms.
+
+        Parameters:
+            u (float): Pixel x-coordinate
+            v (float): Pixel y-coordinate
+            Z (float): Depth value associated with pixel (u,v) from the camera
+
+        Returns:
+            np.array: A (3,) numpy array representing the 3D position in world coordinates.
+        """
+
+        # Extract camera intrinsics
+        fx = self.fx
+        fy = self.fy
+        cx = self.cx
+        cy = self.cy
+
+        # Back-project from pixel to camera coordinates
+        X_cam = (u - cx) * Z / fx
+        Y_cam = (v - cy) * Z / fy
+        Z_cam = Z
+        cam_world_pos, cam_world_orn = self.translation, self.rotation
+        # self.extrinsic presumably is from world to camera if it's used like a view matrix.
+        # If so, invert it:
+        cam_to_world_pos, cam_to_world_orn = p.invertTransform(cam_world_pos, cam_world_orn)
+
+        world_pos, world_ori = p.multiplyTransforms(cam_to_world_pos, cam_to_world_orn, [X_cam, Y_cam, Z_cam], [0, 0, 0, 1])
+        return world_pos, world_ori
+
+
 
     def start_recording(self, save_dir):
         if not os.path.exists(save_dir):
@@ -47,78 +94,3 @@ class Camera:
         p.stopStateLogging(self.rec_id)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 1)
 
-
-def _gl_ortho(left, right, bottom, top, near, far):
-    ortho = np.diag(
-        [2.0 / (right - left), 2.0 / (top - bottom), -2.0 / (far - near), 1.0]
-    )
-    ortho[0, 3] = -(right + left) / (right - left)
-    ortho[1, 3] = -(top + bottom) / (top - bottom)
-    ortho[2, 3] = -(far + near) / (far - near)
-    return ortho
-
-
-def _build_projection_matrix(intrinsic, near, far):
-    perspective = np.array(
-        [
-            [intrinsic.fx, 0.0, -intrinsic.cx, 0.0],
-            [0.0, intrinsic.fy, -intrinsic.cy, 0.0],
-            [0.0, 0.0, near + far, near * far],
-            [0.0, 0.0, -1.0, 0.0],
-        ]
-    )
-    ortho = _gl_ortho(0.0, intrinsic.width, intrinsic.height, 0.0, near, far)
-    return np.matmul(ortho, perspective)
-
-
-class CameraIntrinsic(object):
-    """Intrinsic parameters of a pinhole camera model.
-
-    Attributes:
-        width (int): The width in pixels of the camera.
-        height(int): The height in pixels of the camera.
-        K: The intrinsic camera matrix.
-    """
-
-    def __init__(self, width, height, fx, fy, cx, cy):
-        self.width = width
-        self.height = height
-        self.K = np.array([[fx, 0.0, cx], [0.0, fy, cy], [0.0, 0.0, 1.0]])
-
-    @property
-    def fx(self):
-        return self.K[0, 0]
-
-    @property
-    def fy(self):
-        return self.K[1, 1]
-
-    @property
-    def cx(self):
-        return self.K[0, 2]
-
-    @property
-    def cy(self):
-        return self.K[1, 2]
-
-    def to_dict(self):
-        """Serialize intrinsic parameters to a dict object."""
-        data = {
-            "width": self.width,
-            "height": self.height,
-            "K": self.K.flatten().tolist(),
-        }
-        return data
-
-    @classmethod
-    def from_dict(cls, data):
-        """Deserialize intrinisic parameters from a dict object."""
-        intrinsic = cls(
-            width=data["width"],
-            height=data["height"],
-            fx=data["K"][0],
-            fy=data["K"][4],
-            cx=data["K"][2],
-            cy=data["K"][5],
-        )
-        return intrinsic
