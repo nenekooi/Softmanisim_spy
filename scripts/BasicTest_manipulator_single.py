@@ -1,6 +1,12 @@
 import numpy as np
 import time
+import sys
+import os
 
+# 动态添加 SoftManiSim 文件夹到 sys.path
+softmanisim_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if softmanisim_path not in sys.path:
+    sys.path.append(softmanisim_path)
 from environment.BasicEnvironment import BasicEnvironment
 from pybullet_env.BasicEnvironment import SoftRobotBasicEnvironment
 

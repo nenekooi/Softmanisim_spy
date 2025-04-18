@@ -31,67 +31,25 @@ class ODE():
     #     # y0 = np.concatenate((r0, R0), axis=0)
     #     self._reset_y0()
 
-
-
-
-
-
-    # def __init__(self, initial_length_m=0.1, cable_distance_m=7.5e-3, ode_step_ds=0.005): # <<< 可以将更多参数移到这里
-    #     """
-    #     初始化 ODE 求解器。
-    #     Args:
-    #         initial_length_m (float): 机器人的参考长度 (单位: 米)。
-    #     """
-    #     self.l = 0.0 # 当前积分长度？(通常由 l0 + action[0] 决定，但可以初始化为0)
-    #     self.uy = 0.0 # 当前 Y 方向曲率
-    #     self.ux = 0.0 # 当前 X 方向曲率
-    #     self.dp = 0   # 未知用途，按原样初始化
-    #     self.err = np.array([0.0, 0.0, 0.0]) # 未知用途，按原样初始化
-    #     self.errp = np.array([0.0, 0.0, 0.0])# 未知用途，按原样初始化
-    #     self.simCableLength = 0 # 未知用途，按原样初始化
-
-    #     # --- 设置核心物理参数 ---
-    #     self.l0 = initial_length_m    # <<< 使用传入的参数设置初始长度
-    #     self.d = cable_distance_m     # <<< 使用传入的参数设置绳索距离
-    #     self.ds = ode_step_ds         # <<< 使用传入的参数设置步长
-
-    #     # --- 初始化 ODE 状态向量 ---
-    #     # self.y0 在 _reset_y0 中设置，这里不需要显式设置
-    #     self.states = None # 可以先设为 None
-
-    #     # --- 初始化 action ---
-    #     self.action = np.zeros(3)
-
-    #     # --- 调用重置方法来设置 y0 (确保 _reset_y0 已修改！) ---
-    #     self._reset_y0() # 注意：调用这个会设置 self.y0 和 self.states
-    
-    def __init__(self, initial_length_m=0.1, cable_distance_m=7.5e-3, ode_step_ds=0.005, 
-                 axial_coupling_coefficient=0.0): # <<< 添加新参数 axial_coupling_coefficient
+    def __init__(self, initial_length_m=0.1, cable_distance_m=7.5e-3, ode_step_ds=0.005): # <<< 可以将更多参数移到这里
         """
         初始化 ODE 求解器。
         Args:
             initial_length_m (float): 机器人的参考长度 (单位: 米)。
-            cable_distance_m (float): 缆绳到中心线的径向距离 (单位: 米)。
-            ode_step_ds (float): ODE 积分步长。
-            axial_coupling_coefficient (float): 弯曲导致轴向应变的耦合系数 (经验值, 通常为负数或零)。
         """
-       
         self.l = 0.0 # 当前积分长度？(通常由 l0 + action[0] 决定，但可以初始化为0)
         self.uy = 0.0 # 当前 Y 方向曲率
         self.ux = 0.0 # 当前 X 方向曲率
-        self.dp = 0   
-        self.err = np.array([0.0, 0.0, 0.0]) 
-        self.errp = np.array([0.0, 0.0, 0.0])
-        self.simCableLength = 0 #
+        self.dp = 0   # 未知用途，按原样初始化
+        self.err = np.array([0.0, 0.0, 0.0]) # 未知用途，按原样初始化
+        self.errp = np.array([0.0, 0.0, 0.0])# 未知用途，按原样初始化
+        self.simCableLength = 0 # 未知用途，按原样初始化
 
         # --- 设置核心物理参数 ---
         self.l0 = initial_length_m    # <<< 使用传入的参数设置初始长度
         self.d = cable_distance_m     # <<< 使用传入的参数设置绳索距离
         self.ds = ode_step_ds         # <<< 使用传入的参数设置步长
-        self.k_strain = axial_coupling_coefficient # <<< 存储传入的耦合系数
-       # --- 初始化应变 ---
-        self.epsilon = 0.0 # <<< 初始化轴向应变
- 
+
         # --- 初始化 ODE 状态向量 ---
         # self.y0 在 _reset_y0 中设置，这里不需要显式设置
         self.states = None # 可以先设为 None
@@ -100,17 +58,10 @@ class ODE():
         self.action = np.zeros(3)
 
         # --- 调用重置方法来设置 y0 (确保 _reset_y0 已修改！) ---
-        self._reset_y0() # 注意：调用这个会设置 self.y0 和 self.states    
-
-
-
-
-
-
-
-
-
-
+        self._reset_y0() # 注意：调用这个会设置 self.y0 和 self.states
+        
+        
+        
     # def _reset_y0(self):
     #     r0 = np.array([0,0,0]).reshape(3,1)  
     #     R0 = np.eye(3,3)
@@ -121,20 +72,6 @@ class ODE():
     #     self.y0 = np.copy(self.states)
     
 
-    # def _reset_y0(self, initialize=False): # <<< 添加可选参数
-    #      """重置初始状态向量 y0。"""
-    #      r0 = np.array([0,0,0]).reshape(3,1)
-    #      R0 = np.eye(3,3)
-    #      R0 = np.reshape(R0,(9,1))
-    #      y0 = np.concatenate((r0, R0), axis=0)
-    #      # --- !!! 删除或注释掉下面这行，防止覆盖 l0 !!! ---
-    #      # self.l0 = 100e-3
-    #      # ---------------------------------------------
-    #      self.states = np.squeeze(np.asarray(y0))
-    #      self.y0 = np.copy(self.states)
-    #      # 可选：在初始化调用时，可以额外重置 action
-    #      if initialize:
-    #          self.action = np.zeros(3)
     def _reset_y0(self, initialize=False): # <<< 添加可选参数
          """重置初始状态向量 y0。"""
          r0 = np.array([0,0,0]).reshape(3,1)
@@ -149,57 +86,17 @@ class ODE():
          # 可选：在初始化调用时，可以额外重置 action
          if initialize:
              self.action = np.zeros(3)
-                
-
-
-
-
-
+        
 
     def _update_l0(self,l0):
         self.l0 = l0
         
-    # def updateAction(self,action):
-    #     self.l  = self.l0 + action[0]
-    #     # self.l  = action0
-        
-    #     self.uy = (action[1]) /  (self.l * self.d)
-    #     self.ux = (action[2]) / -(self.l * self.d)
-
     def updateAction(self,action):
         self.l  = self.l0 + action[0]
         # self.l  = action0
         
-        # 计算曲率 ux, uy (添加除零保护)
-        denominator = self.l * self.d
-        if abs(denominator) > 1e-9:
-            self.uy = (action[1]) / denominator
-            self.ux = (action[2]) / -denominator # 保持负号
-        else:
-            self.uy = 0.0
-            self.ux = 0.0
-            # 可以加一个警告 print("Warning: Denominator is close to zero in updateAction.")
-
-        # <<< 新增：计算并存储轴向应变 >>>
-        self.epsilon = self._calculate_axial_strain() 
-        # 现在 self.ux, self.uy, self.epsilon 都已更新完毕，可供 odeFunction 使用
-
-    # def odeFunction(self,s,y):
-    #     dydt  = np.zeros(12)
-    #     # % 12 elements are r (3) and R (9), respectively
-    #     e3    = np.array([0,0,1]).reshape(3,1)              
-    #     u_hat = np.array([[0,0,self.uy], [0, 0, -self.ux],[-self.uy, self.ux, 0]])
-    #     r     = y[0:3].reshape(3,1)
-    #     R     = np.array( [y[3:6],y[6:9],y[9:12]]).reshape(3,3)
-    #     # % odes
-    #     dR  = R @ u_hat
-    #     dr  = R @ e3
-    #     dRR = dR.T
-    #     dydt[0:3]  = dr.T
-    #     dydt[3:6]  = dRR[:,0]
-    #     dydt[6:9]  = dRR[:,1]
-    #     dydt[9:12] = dRR[:,2]
-    #     return dydt.T
+        self.uy = (action[1]) /  (self.l * self.d)
+        self.ux = (action[2]) / -(self.l * self.d)
 
 
     def odeFunction(self,s,y):
@@ -211,14 +108,14 @@ class ODE():
         R     = np.array( [y[3:6],y[6:9],y[9:12]]).reshape(3,3)
         # % odes
         dR  = R @ u_hat
-        dr  = (1 + self.epsilon) * (R @ e3)
+        dr  = R @ e3
         dRR = dR.T
-        # 存储导数
         dydt[0:3]  = dr.T
         dydt[3:6]  = dRR[:,0]
         dydt[6:9]  = dRR[:,1]
         dydt[9:12] = dRR[:,2]
         return dydt.T
+
 
     def odeStepFull(self):        
         cableLength          = (0,self.l)
@@ -228,46 +125,6 @@ class ODE():
         self.states          = np.squeeze(np.asarray(sol.y[:,-1]))
         return sol.y
 
-
-
-
-    def _calculate_axial_strain(self):
-        """
-        根据弯曲曲率计算近似的轴向应变 (epsilon)。
-        这是一个简化的经验模型，假设弯曲会导致压缩。
-        """
-        # self.k_strain: 负值表示弯曲引起压缩，0 表示无耦合
-        # ux, uy: 当前的中心线曲率
-        # l0: 参考长度，用于可能的缩放 (也可以不用)
-
-        # 模型: 应变与总曲率的平方成正比
-        curvature_squared = self.ux**2 + self.uy**2
-
-        # 计算应变。乘以 self.l0 是为了让 k_strain 更接近无量纲？
-        # 或者直接 k_strain * curvature_squared。需要根据实际情况调整。
-        # 这里的尺度因子非常重要，需要根据实验数据仔细调整 k_strain！
-        self.epsilon = self.k_strain * curvature_squared 
-
-        # (可选) 限制应变范围，防止极端值
-        # 例如，限制最大压缩为 30%，最大拉伸为 5%
-        # max_compression = -0.3 
-        # max_extension = 0.05 
-        # self.epsilon = np.clip(self.epsilon, max_compression, max_extension)
-
-        # 在这个简化模型中，我们直接返回计算出的应变
-        # 注意：我们没有将计算出的 epsilon 存储回 self.epsilon，
-        # 因为在这个模型里，ux, uy 不变，epsilon 也不变。
-        # 在 odeFunction 中直接使用这里返回的值。
-        # 如果 epsilon 会变化，则需要存储 self.epsilon。
-        # 为了代码清晰，我们在 updateAction 中计算并存储 self.epsilon。
-        # 所以这里直接返回计算值。
-
-        # --- 更新：改为在 updateAction 中调用并存储 self.epsilon ---
-        # --- 所以这个方法只负责计算逻辑 ---
-        calculated_epsilon = self.k_strain * curvature_squared * self.l0 
-        # 添加可选的 clip
-        # calculated_epsilon = np.clip(calculated_epsilon, -0.3, 0.05) 
-        return calculated_epsilon
 
 class softRobotVisualizer():
     def __init__(self,obsEn = False,title=None,ax_lim=None) -> None:
