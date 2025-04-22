@@ -150,7 +150,7 @@ if __name__ == "__main__":
     print("--- 设置参数 ---")
     DATA_FILE_PATH = 'c:/Users/11647/Desktop/data/circle2_without_0.xlsx'
     SHEET_NAME = 'Sheet1'
-    OUTPUT_RESULTS_PATH = os.path.join(os.path.dirname(DATA_FILE_PATH), '2.xlsx')
+    OUTPUT_RESULTS_PATH = os.path.join(os.path.dirname(DATA_FILE_PATH), '?.xlsx')
 
     num_cables = 3 
     cable_distance = 0.004
@@ -300,6 +300,6 @@ if __name__ == "__main__":
     p.disconnect(physicsClientId)
 
     # --- 保存结果 ---
-    save_results_to_excel(results_data, OUTPUT_RESULTS_PATH)
+    # save_results_to_excel(results_data, OUTPUT_RESULTS_PATH)
 
     print("--- 仿真结束 ---")
