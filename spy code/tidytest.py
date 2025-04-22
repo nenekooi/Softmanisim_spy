@@ -148,9 +148,9 @@ def convert_curvatures_to_ode_action(ux, uy, length_change, d, L0_seg):
 if __name__ == "__main__":
 
     print("--- 设置参数 ---")
-    DATA_FILE_PATH = 'c:/Users/11647/Desktop/data/circle2_without_0.xlsx'
+    DATA_FILE_PATH = 'D:/data/load_data/circle_without_0.xlsx'
     SHEET_NAME = 'Sheet1'
-    OUTPUT_RESULTS_PATH = os.path.join(os.path.dirname(DATA_FILE_PATH), '?.xlsx')
+    OUTPUT_RESULTS_PATH = 'D:/data/save_data/circle_without_0(k=-20,a=0.02).xlsx'
 
     num_cables = 3 
     cable_distance = 0.004
@@ -300,6 +300,6 @@ if __name__ == "__main__":
     p.disconnect(physicsClientId)
 
     # --- 保存结果 ---
-    # save_results_to_excel(results_data, OUTPUT_RESULTS_PATH)
+    save_results_to_excel(results_data, OUTPUT_RESULTS_PATH)
 
     print("--- 仿真结束 ---")
