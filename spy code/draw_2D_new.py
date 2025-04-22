@@ -29,7 +29,7 @@ except Exception as e:
 # --- 参数设置 ---
 # !!! 请确保这个路径指向你的包含 sim 和 real 数据的 XLSX 文件 !!!
 # !!! 注意：默认读取 Excel 文件的第一个工作表 (sheet) !!!
-INPUT_FILE_PATH = 'c:/Users/11647/Desktop/data/circle_without_0(k=-200,act=0.01).xlsx' # <<< 更改为你的 XLSX 文件路径
+INPUT_FILE_PATH = 'D:/data/save_data/circle_without_0(k=-20,a=0.02).xlsx' # <<< 更改为你的 XLSX 文件路径
 # 如果数据不在第一个工作表，请取消下面一行的注释并修改工作表名称或索引
 # SHEET_NAME = 'Sheet1' # 或者 SHEET_NAME = 0
 

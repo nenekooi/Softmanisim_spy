@@ -65,12 +65,12 @@ if __name__ == "__main__":
     print("--- 设置参数 & 加载数据 ---")
     # 1. 输入数据文件路径
     DATA_FILE_PATH = 'c:/Users/11647/Desktop/data/circle2_without_0.xlsx'
-    # DATA_FILE_PATH = 'c:/Users/11647/Desktop/data/circle2.xlsx' # <<< 确认 Excel 文件路径
+    # DATA_FILE_PATH = 'c:/Users/11647/Desktop/data/Processed_Data3w_20250318.xlsx' # <<< 确认 Excel 文件路径
     SHEET_NAME = 'Sheet1'
     # 2. 输出结果文件路径
     output_dir = os.path.dirname(DATA_FILE_PATH) if os.path.dirname(DATA_FILE_PATH) else '.'
     # <<< 修改输出文件名，更清晰地反映内容 >>>
-    OUTPUT_RESULTS_PATH = os.path.join(output_dir, 'circle_without_0(k=-200,act=0.01).xlsx')
+    OUTPUT_RESULTS_PATH = 'C:/Users/11647/SoftManiSim/data_branch_adjust_asial/circle2_without_0(k=-20,act=0.02).xlsx'
 
     # 3. 机器人物理参数
     num_cables = 3; cable_distance = 0.004; initial_length = 0.12; number_of_segment = 1
@@ -81,8 +81,8 @@ if __name__ == "__main__":
     # --- 这个值需要你根据仿真结果和真实数据的对比来反复调整 ---
     # --- 从 0 开始，然后尝试小的负值，比如 -0.01, -0.05, -0.1, -0.2 ... ---
     # --- 直到仿真结果的 Z 轴变化趋势接近真实数据 ---
-    axial_strain_coefficient = -200 # <--- 示例值，需要调试！  
-    AXIAL_ACTION_SCALE = 0.01
+    axial_strain_coefficient = -20 # <--- 示例值，需要调试！  
+    AXIAL_ACTION_SCALE = 0.02
     # 4. 可视化参数
     body_color = [1, 0.0, 0.0, 1]; head_color = [0.0, 0.0, 0.75, 1]
     body_sphere_radius = 0.02; number_of_sphere = 30

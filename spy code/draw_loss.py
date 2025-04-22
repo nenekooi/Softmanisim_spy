@@ -26,7 +26,7 @@ except Exception as e:
 # --- 参数设置 ---
 # !!! 请确保这个路径指向你最新的包含 sim 和 real 数据的 XLSX 文件 !!!
 # <<< 修改：变量名和文件扩展名 >>>
-INPUT_XLSX_PATH = 'c:/Users/11647/Desktop/data/circle_without_0(k=-200,act=0.01).xlsx' # <<< 请将这里替换为你的 XLSX 文件路径
+INPUT_XLSX_PATH = 'c:/Users/11647/Desktop/data/circle2_without_0(k=-20,act=0.02).xlsx' # <<< 请将这里替换为你的 XLSX 文件路径
 SHEET_NAME = 'Sheet1' # <<< 如果你的数据不在第一个工作表，修改这里的工作表名称或索引 (e.g., 0)
 
 # --- 核心绘图逻辑 ---

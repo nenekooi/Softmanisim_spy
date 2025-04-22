@@ -1,6 +1,16 @@
 import numpy as np
 import time
 
+try:
+    softmanisim_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    if softmanisim_path not in sys.path: sys.path.append(softmanisim_path); print(f"[调试] 已添加路径: {softmanisim_path}")
+except NameError: print("[警告] 无法自动确定项目根目录，请确保 visualizer 模块在 Python 路径中。")
+
+# --- 检查 visualizer 模块导入 ---
+try:
+    from visualizer.visualizer import ODE
+    print("[调试] 成功从 'visualizer.visualizer' 导入 ODE")
+except ImportError as e: print(f"[错误] 无法导入 ODE 类: {e}"); print("[调试] 当前 sys.path:", sys.path); sys.exit("请检查 visualizer 模块和路径。")
 from environment.BasicEnvironment import BasicEnvironment
 from pybullet_env.BasicEnvironment import SoftRobotBasicEnvironment
 
