@@ -148,9 +148,9 @@ def convert_curvatures_to_ode_action(ux, uy, length_change, d, L0_seg):
 if __name__ == "__main__":
 
     print("--- 设置参数 ---")
-    DATA_FILE_PATH = 'D:/data/load_data/circle_without_0.xlsx'
+    DATA_FILE_PATH = 'D:/data/load_data/random_data.xlsx'
     SHEET_NAME = 'Sheet1'
-    OUTPUT_RESULTS_PATH = 'D:/data/save_data/circle_without_0(k=-20,a=0.02).xlsx'
+    OUTPUT_RESULTS_PATH = 'D:/data/save_data/random_data(k=-2000,a=0.04，ds=0.0005).xlsx'
 
     num_cables = 3 
     cable_distance = 0.004
@@ -158,8 +158,8 @@ if __name__ == "__main__":
     number_of_segment = 1
     L0_seg = initial_length / number_of_segment
     print(f"机器人参数: L0={initial_length:.4f}m, d={cable_distance:.4f}m")
-    axial_strain_coefficient = -20
-    AXIAL_ACTION_SCALE = 0.02
+    axial_strain_coefficient = -2000
+    AXIAL_ACTION_SCALE = 0.04
 
     body_color = [1, 0.0, 0.0, 1]
     head_color = [0.0, 0.0, 0.75, 1]
