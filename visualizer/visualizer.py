@@ -65,7 +65,7 @@ class ODE():
     #     # --- 调用重置方法来设置 y0 (确保 _reset_y0 已修改！) ---
     #     self._reset_y0() # 注意：调用这个会设置 self.y0 和 self.states
     
-    def __init__(self, initial_length_m=0.1, cable_distance_m=7.5e-3, ode_step_ds=0.005, 
+    def __init__(self, initial_length_m=0.12, cable_distance_m=0.0004, ode_step_ds=0.0005, 
                  axial_coupling_coefficient=0.0): # <<< 添加新参数 axial_coupling_coefficient
         """
         初始化 ODE 求解器。
@@ -207,11 +207,11 @@ class ODE():
         # % 12 elements are r (3) and R (9), respectively
         e3    = np.array([0,0,1]).reshape(3,1)              
         u_hat = np.array([[0,0,self.uy], [0, 0, -self.ux],[-self.uy, self.ux, 0]])
-        r     = y[0:3].reshape(3,1)
-        R     = np.array( [y[3:6],y[6:9],y[9:12]]).reshape(3,3)
+        r     = y[0:3].reshape(3,1)  #从状态向量 y 中提取并重塑成的 3x1 位置向量 r(s)。
+        R     = np.array( [y[3:6],y[6:9],y[9:12]]).reshape(3,3) #从状态向量 y 中提取并重塑成的 3x3 旋转矩阵 R(s)。
         # % odes
         dR  = R @ u_hat
-        dr  = (1 + self.epsilon) * (R @ e3)
+        dr  = (1 + self.epsilon) * (R @ e3) # 位置向量对弧长s的导数,当epsilon小于0时，dr的模长小于1。沿着s移动ds时，前进距离变小，总长度L变小。
         dRR = dR.T
         # 存储导数
         dydt[0:3]  = dr.T
@@ -238,36 +238,40 @@ class ODE():
         """
         # self.k_strain: 负值表示弯曲引起压缩，0 表示无耦合
         # ux, uy: 当前的中心线曲率
-        # l0: 参考长度，用于可能的缩放 (也可以不用)
-
         # 模型: 应变与总曲率的平方成正比
         curvature_squared = self.ux**2 + self.uy**2
 
-        # 计算应变。乘以 self.l0 是为了让 k_strain 更接近无量纲？
         # 或者直接 k_strain * curvature_squared。需要根据实际情况调整。
-        # 这里的尺度因子非常重要，需要根据实验数据仔细调整 k_strain！
-        self.epsilon = self.k_strain * curvature_squared 
+        # 这里的尺度因子非常重要，需要根据实验数据仔细调整 k_strain！ 
+        # self.epsilon = self.k_strain * curvature_squared 
 
-        # (可选) 限制应变范围，防止极端值
-        # 例如，限制最大压缩为 30%，最大拉伸为 5%
-        # max_compression = -0.3 
-        # max_extension = 0.05 
-        # self.epsilon = np.clip(self.epsilon, max_compression, max_extension)
-
-        # 在这个简化模型中，我们直接返回计算出的应变
-        # 注意：我们没有将计算出的 epsilon 存储回 self.epsilon，
-        # 因为在这个模型里，ux, uy 不变，epsilon 也不变。
-        # 在 odeFunction 中直接使用这里返回的值。
-        # 如果 epsilon 会变化，则需要存储 self.epsilon。
-        # 为了代码清晰，我们在 updateAction 中计算并存储 self.epsilon。
-        # 所以这里直接返回计算值。
-
-        # --- 更新：改为在 updateAction 中调用并存储 self.epsilon ---
-        # --- 所以这个方法只负责计算逻辑 ---
         calculated_epsilon = self.k_strain * curvature_squared * self.l0 
-        # 添加可选的 clip
-        # calculated_epsilon = np.clip(calculated_epsilon, -0.3, 0.05) 
+ 
         return calculated_epsilon
+    
+    
+    def set_kinematic_state(self, length_change_signal, ux_input, uy_input):
+        """
+        直接设置ODE对象当前的运动学状态（长度变化、曲率）。
+
+    Args:
+        length_change_signal (float): 代表轴向长度变化的信号
+                                      (通常是 avg_dl * axial_scale)。
+        ux_input (float): 要使用的 x 方向曲率 (绕 y 轴)。
+        uy_input (float): 要使用的 y 方向曲率 (绕 x 轴)。
+        """
+    # 1. 更新参考长度 (仍然需要 length_change_signal)
+        self.l = self.l0 + length_change_signal
+
+    # 2. 直接设置内部曲率
+        self.ux = ux_input
+        self.uy = uy_input
+
+    # 3. 基于新的 ux, uy 计算应变
+        self.epsilon = self._calculate_axial_strain()
+
+
+
 
 class softRobotVisualizer():
     def __init__(self,obsEn = False,title=None,ax_lim=None) -> None:

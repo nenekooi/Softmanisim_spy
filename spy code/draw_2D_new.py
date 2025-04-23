@@ -29,7 +29,7 @@ except Exception as e:
 # --- 参数设置 ---
 # !!! 请确保这个路径指向你的包含 sim 和 real 数据的 XLSX 文件 !!!
 # !!! 注意：默认读取 Excel 文件的第一个工作表 (sheet) !!!
-INPUT_FILE_PATH = 'D:/data/save_data/random_data(k=-2000,a=0.04，ds=0.0005).xlsx' # <<< 更改为你的 XLSX 文件路径
+INPUT_FILE_PATH = 'D:/data/save_data_new/1.xlsx' # <<< 更改为你的 XLSX 文件路径
 # 如果数据不在第一个工作表，请取消下面一行的注释并修改工作表名称或索引
 # SHEET_NAME = 'Sheet1' # 或者 SHEET_NAME = 0
 
@@ -69,7 +69,7 @@ if __name__ == "__main__":
         # --- 获取数据 ---
         # 确保数据类型是数值型，以防Excel中存在非数值单元格
         try:
-            sim_x = pd.to_numeric(df['sim_X_mm'], errors='coerce')
+            sim_x = -pd.to_numeric(df['sim_X_mm'], errors='coerce')
             sim_y = pd.to_numeric(df['sim_Y_mm'], errors='coerce') # 注意这里的负号
             sim_z = pd.to_numeric(df['sim_Z_mm'], errors='coerce')
             real_x = pd.to_numeric(df['X_real_mm'], errors='coerce')
@@ -150,7 +150,7 @@ if __name__ == "__main__":
             print(f"  MAE (各轴平均损失) - X: {mae_x:.3f} mm, Y: {mae_y:.3f} mm, Z: {mae_z:.3f} mm")
             print(f"  X-Y 平面平均距离误差 (MAE_XY): {mae_xy:.3f} mm")
             print(f"  3D 平均欧氏距离误差 (MAE_3D): {mae_3d:.3f} mm")
-        # --- 误差计算结束 ---
+        # --- 误差计算结束 --- 
 
 
         # ==============================================================

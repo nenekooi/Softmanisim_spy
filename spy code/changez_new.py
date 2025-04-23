@@ -58,22 +58,165 @@ def convert_curvatures_to_ode_action(ux, uy, length_change, d, L0_seg):
     action_ode[1] = uy * l * d; action_ode[2] = -ux * l * d
     return action_ode
 
+def calculate_curvatures_from_dl_v2(dl_segment, d, L0_seg):
+    """
+    使用针对 3 根对称缆绳的标准公式，根据不同的缆绳长度变化量计算曲率 ux, uy。
+
+    假设缆绳 1 位于 0 度，缆绳 2 位于 120 度，缆绳 3 位于 240 度，
+    相对于与 uy 弯曲相关的轴。
+
+    Args:
+        dl_segment (np.ndarray): 包含缆绳长度变化量 [dl1, dl2, dl3] 的数组 (单位：米)。
+        d (float): 缆绳到中心骨干的径向距离 (单位：米)。
+        L0_seg (float): 段的初始长度 (单位：米)。用于比例缩放。
+
+    Returns:
+        tuple: (ux, uy) 曲率 (单位：1/米)。
+               ux: 绕局部 y 轴的曲率。
+               uy: 绕局部 x 轴的曲率。
+    """
+    ux = 0.0
+    uy = 0.0
+
+    # 对有效输入进行基本检查
+    if abs(d) < 1e-9:
+        print("[警告] calculate_curvatures_from_dl_v2: 缆绳距离 'd' 接近于零。")
+        return ux, uy
+    if abs(L0_seg) < 1e-9:
+        print("[警告] calculate_curvatures_from_dl_v2: 段长度 'L0_seg' 接近于零。")
+        return ux, uy
+
+    dl1 = dl_segment[0]
+    dl2 = dl_segment[1]
+    dl3 = dl_segment[2]
+
+    # 分母部分 L*d
+    # 我们使用 L0_seg 作为参考长度 L 来计算曲率贡献
+    Ld = L0_seg * d
+
+    # 计算 ux (绕 y 轴弯曲)
+    ux_denominator = Ld * math.sqrt(3.0)
+    if abs(ux_denominator) > 1e-9:
+        # 注意: 原始代码是 dl3 - dl2。根据缆绳 2/3 相对于 y 轴的定义，
+        # 可能是 dl2 - dl3。我们暂时先保持 dl3 - dl2。
+        ux = (dl3 - dl2) / ux_denominator
+    else:
+        ux = 0.0
+
+    # 计算 uy (绕 x 轴弯曲)
+    uy_denominator = 3.0 * Ld
+    if abs(uy_denominator) > 1e-9:
+         uy = (2.0 * dl1 - dl2 - dl3) / uy_denominator
+    else:
+         uy = 0.0
+
+    # --- 关于坐标系的重要说明 ---
+    # ODE 类 (`visualizer.py`) 在其 u_hat 矩阵中使用了 ux, uy：
+    # u_hat = np.array([[0, 0, self.uy], [0, 0, -self.ux],[-self.uy, self.ux, 0]])
+    # 这意味着：
+    # - uy 导致绕 x 轴的旋转 (dR ~ R@[[0,0,uy],[0,0,0],[-uy,0,0]])
+    # - ux 导致绕 y 轴的旋转 (dR ~ R@[[0,0,0],[0,0,-ux],[0,ux,0]])
+    # 你需要确保计算出的 ux, uy 与这个定义相匹配，这取决于你的物理设置
+    # 和缆绳编号（哪根缆绳对应 dl1, dl2, dl3）。
+    # 例如，如果你的设置中 1 号缆绳主要导致绕物理 Y 轴的弯曲，
+    # 你可能需要交换计算出的 ux 和 uy，或者调整它们的符号。
+
+    # 目前，我们基于上面的标准推导返回 ux, uy。
+    return ux, uy
+
+import math
+import numpy as np
+
+# (保留你现有的 import 和其他函数)
+
+def calculate_curvatures_from_dl_v3(dl_segment, d, L0_seg, AXIAL_ACTION_SCALE=1.0):
+    """
+    计算曲率 ux, uy，使用标准公式，但使用当前估计长度而非初始长度进行缩放。
+
+    Args:
+        dl_segment (np.ndarray): 包含缆绳长度变化量 [dl1, dl2, dl3] 的数组 (单位：米)。
+        d (float): 缆绳到中心骨干的径向距离 (单位：米)。
+        L0_seg (float): 段的初始长度 (单位：米)。
+        axial_scale (float): 应用于 avg_dl 以估计长度变化的比例因子。默认为 1.0。
+
+    Returns:
+        tuple: (ux, uy) 曲率 (单位：1/米)。
+               ux: 绕局部 y 轴的曲率。
+               uy: 绕局部 x 轴的曲率。
+    """
+    ux = 0.0
+    uy = 0.0
+
+    # 基本检查
+    if abs(d) < 1e-9:
+        print("[警告] calculate_curvatures_from_dl_v3: 缆绳距离 'd' 接近于零。")
+        return ux, uy
+    if abs(L0_seg) < 1e-9:
+        print("[警告] calculate_curvatures_from_dl_v3: 初始段长度 'L0_seg' 接近于零。")
+        # 如果 L0 为零，无法估计当前长度
+        return ux, uy
+
+    dl1 = dl_segment[0]
+    dl2 = dl_segment[1]
+    dl3 = dl_segment[2]
+
+    # 根据平均 dl 和比例因子估计当前长度 L
+    avg_dl = (dl1 + dl2 + dl3) / 3.0
+    L_current_estimate = L0_seg + avg_dl * AXIAL_ACTION_SCALE
+    # 确保估计长度为正
+    if L_current_estimate <= 1e-9:
+         print(f"[警告] calculate_curvatures_from_dl_v3: 估计的当前长度 ({L_current_estimate:.4f}) 接近零或为负。将使用 L0_seg 代替。")
+         L_current_estimate = L0_seg
+
+    # 使用当前估计长度计算分母部分 L*d
+    Ld = L_current_estimate * d
+    if abs(Ld) < 1e-9:
+        print("[警告] calculate_curvatures_from_dl_v3: 乘积 L_current*d 接近于零。")
+        # 如果 L_current 估计有问题或为零，则回退到使用 L0
+        Ld = L0_seg * d
+        if abs(Ld) < 1e-9:
+             return 0.0, 0.0 # 如果 L0*d 也为零，则无法计算
+
+    # 计算 ux (绕 y 轴弯曲)
+    ux_denominator = Ld * math.sqrt(3.0)
+    if abs(ux_denominator) > 1e-9:
+        ux = (dl3 - dl2) / ux_denominator
+    else:
+        ux = 0.0
+
+    # 计算 uy (绕 x 轴弯曲)
+    uy_denominator = 3.0 * Ld
+    if abs(uy_denominator) > 1e-9:
+         uy = (2.0 * dl1 - dl2 - dl3) / uy_denominator
+    else:
+         uy = 0.0
+
+    # 关于坐标系的警告同样适用于这里
+    return ux, uy
+
+# 可以注释掉或删除 v2 版本的函数
+# def calculate_curvatures_from_dl_v2(...):
+#     ...
+
 # --- 主程序 ---
 if __name__ == "__main__":
 
     # --- 数据文件路径和参数 ---
     print("--- 设置参数 & 加载数据 ---")
     # 1. 输入数据文件路径
-    DATA_FILE_PATH = 'c:/Users/11647/Desktop/data/circle2_without_0.xlsx'
+    DATA_FILE_PATH = 'D:/data/load_data/random_data.xlsx'
     # DATA_FILE_PATH = 'c:/Users/11647/Desktop/data/Processed_Data3w_20250318.xlsx' # <<< 确认 Excel 文件路径
     SHEET_NAME = 'Sheet1'
     # 2. 输出结果文件路径
     output_dir = os.path.dirname(DATA_FILE_PATH) if os.path.dirname(DATA_FILE_PATH) else '.'
     # <<< 修改输出文件名，更清晰地反映内容 >>>
-    OUTPUT_RESULTS_PATH = 'C:/Users/11647/SoftManiSim/data_branch_adjust_asial/circle2_without_0(k=-20,act=0.02).xlsx'
+    OUTPUT_RESULTS_PATH = 'D:/data/save_data/random_data_test9(u_new_4,cab=0.04,k=-20,a=1).xlsx'
 
     # 3. 机器人物理参数
-    num_cables = 3; cable_distance = 0.004; initial_length = 0.12; number_of_segment = 1
+    num_cables = 3; 
+    cable_distance = 0.04; 
+    initial_length = 0.12; 
+    number_of_segment = 1
     if number_of_segment <= 0: print("错误: 段数必须为正。"); sys.exit(1)
     L0_seg = initial_length / number_of_segment
     print(f"机器人参数: L0={initial_length:.4f}m, d={cable_distance:.4f}m")
@@ -82,7 +225,7 @@ if __name__ == "__main__":
     # --- 从 0 开始，然后尝试小的负值，比如 -0.01, -0.05, -0.1, -0.2 ... ---
     # --- 直到仿真结果的 Z 轴变化趋势接近真实数据 ---
     axial_strain_coefficient = -20 # <--- 示例值，需要调试！  
-    AXIAL_ACTION_SCALE = 0.02
+    AXIAL_ACTION_SCALE = 1
     # 4. 可视化参数
     body_color = [1, 0.0, 0.0, 1]; head_color = [0.0, 0.0, 0.75, 1]
     body_sphere_radius = 0.02; number_of_sphere = 30
@@ -214,18 +357,19 @@ if __name__ == "__main__":
 
             # --- 计算新形态 ---
             my_ode._reset_y0()
-            ux, uy = calculate_curvatures_from_dl(dl_segment, cable_distance, L0_seg, num_cables)
+            ux, uy = calculate_curvatures_from_dl_v3(dl_segment, cable_distance, L0_seg, AXIAL_ACTION_SCALE)
 
             # <<< 新增: 计算平均 dl 并用于 action[0] >>>
             avg_dl = np.mean(dl_segment)
             commanded_length_change = avg_dl * AXIAL_ACTION_SCALE # 应用缩放系数
 
-            action_ode_segment = convert_curvatures_to_ode_action(
-            ux, uy,
-            commanded_length_change, # <<< 传递计算出的长度变化
-            cable_distance, L0_seg
-            )
-            my_ode.updateAction(action_ode_segment)
+            # action_ode_segment = convert_curvatures_to_ode_action(
+            # ux, uy,
+            # commanded_length_change, # <<< 传递计算出的长度变化
+            # cable_distance, L0_seg
+            # )
+            # my_ode.updateAction(action_ode_segment)
+            my_ode.set_kinematic_state(commanded_length_change, ux, uy)
             sol = my_ode.odeStepFull()
 
             # --- 更新 PyBullet 可视化并记录末端位置 ---
